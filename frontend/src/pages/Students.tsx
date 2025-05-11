@@ -8,21 +8,21 @@ import {
   Text,
   Title,
   Stack,
-  Select,
   Modal,
   ActionIcon,
   Box,
+  Menu,
+  Flex,
 } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import { IconTrash } from '@tabler/icons-react';
+import { IconTrash, IconVaccine, IconVaccineOff } from '@tabler/icons-react';
 
 export default function Students() {
   const [students, setStudents] = useState<any[]>([]);
   const [drives, setDrives] = useState<any[]>([]);
   const [name, setName] = useState('');
   const [studentClass, setStudentClass] = useState('');
-  const [selectedDrives, setSelectedDrives] = useState<{ [key: number]: string }>({});
   const [popupOpened, setPopupOpened] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [search, setSearch] = useState('');
@@ -30,9 +30,12 @@ export default function Students() {
   const studentsPerPage = 6;
   const [csvFile, setCsvFile] = useState<File | null>(null);
 
-
   const fetchStudents = (params = {}) => {
-    api.get('/students', { params }).then(res => setStudents(res.data));
+    api.get('/students', { params }).then(res => {
+      // Sort students by ID in ascending order
+      const sortedStudents = res.data.sort((a: any, b: any) => a.id - b.id);
+      setStudents(sortedStudents);
+    });
   };
 
   const fetchDrives = () => {
@@ -61,14 +64,7 @@ export default function Students() {
       });
   };
 
-  const handleVaccinate = (studentId: number) => {
-    const driveId = selectedDrives[studentId];
-    if (!driveId) {
-      setPopupMessage('Please select a drive before vaccinating!');
-      setPopupOpened(true);
-      return;
-    }
-
+  const handleVaccinate = (studentId: number, driveId: number) => {
     api.post(`/students/${studentId}/vaccinate/${driveId}`)
       .then(() => {
         setPopupMessage('Student vaccinated successfully!');
@@ -138,7 +134,6 @@ export default function Students() {
       });
   };
   
-
   useEffect(() => {
     fetchStudents();
     fetchDrives();
@@ -160,6 +155,14 @@ export default function Students() {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
     }
+  };
+
+  // Get available drives for a student (excluding already vaccinated ones)
+  const getAvailableDrives = (student: any) => {
+    return drives.filter(drive => 
+      !student.vaccinated || 
+      (student.vaccinated && student.vaccination_details?.id !== drive.id)
+    );
   };
 
   return (
@@ -208,7 +211,6 @@ export default function Students() {
           <Button onClick={handleAdd} color="#663399">Register Student</Button>
         </Group>
 
-        {/* 🆕 Bulk Upload CSV Section */}
         <Stack mb="xl">
           <Title order={3}>Bulk Upload Students via CSV</Title>
           <Group grow>
@@ -231,70 +233,78 @@ export default function Students() {
         <Title order={2} mb="lg">Students Vaccination Status</Title>
 
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-          {currentStudents.map((s) => (
-            <Card key={s.id} withBorder shadow="sm">
-              <Text><strong>Name:</strong> {s.name}</Text>
-              <Text><strong>Class:</strong> {s.student_class}</Text>
-              <Text>
-                <strong>Vaccinated:</strong>
-                <Box
-                  style={{
-                    display: 'inline-block',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    backgroundColor: s.vaccinated ? '#c8e6c9' : '#ffcdd2',
-                    color: s.vaccinated ? '#388e3c' : '#d32f2f',
-                    fontWeight: 500,
-                    fontSize: '14px',
-                  }}
-                >
-                  {s.vaccinated ? 'Yes' : 'No'}
-                </Box>
-              </Text>
-              {/* Vaccination Details */}
-      {s.vaccinated && s.vaccination_details && (
-        <>
-          <Text mt="sm"><strong>Vaccine:</strong> {s.vaccination_details.vaccine_name}</Text>
-          <Text>
-            <strong>Date:</strong> {new Date(s.vaccination_details.drive_date).toLocaleDateString()}
-          </Text>
-        </>
-      )}
+          {currentStudents.map((student) => (
+            <Card key={student.id} withBorder shadow="sm" padding="lg" radius="md">
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text fw={600} size="lg">{student.name}</Text>
+                  <ActionIcon
+                    color="red"
+                    variant="light"
+                    onClick={() => handleDelete(student.id)}
+                    size="sm"
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              
+                <Text c="dimmed">Class: {student.student_class}</Text>
 
-{!s.vaccinated && (
-        <Select
-          placeholder="Select Drive"
-          data={drives.map((d: any) => ({
-            label: `${d.vaccine_name} (${new Date(d.drive_date).toLocaleDateString()})`,
-            value: d.id.toString(),
-          }))}
-          value={selectedDrives[s.id] || null}
-          onChange={(value) =>
-            setSelectedDrives((prev) => ({ ...prev, [s.id]: value || '' }))
-          }
-          mt="sm"
-        />
-      )}
+                <Group>
+                  <Text>Status:</Text>
 
-              {/* Buttons Row */}
-              <Group justify="flex-end" mt="sm">
-                <Button
-                  size="md"
-                  onClick={() => handleVaccinate(s.id)}
-                  disabled={s.vaccinated}
-                  color="#663399"
-                >
-                  Vaccinate
-                </Button>
-                <ActionIcon
-                  color="red"
-                  variant="light"
-                  onClick={() => handleDelete(s.id)}
-                  size="sm"
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Group>
+                  {/* Minimal status indicator */}
+                  <Text size="sm" c={student.vaccinated ? 'green' : 'red'} mb="sm">
+                    {student.vaccinated ? (
+                      <Flex align="center" gap={4}>
+                        <IconVaccine size={14} /> Vaccinated
+                      </Flex>
+                    ) : (
+                      <Flex align="center" gap={4}>
+                        <IconVaccineOff size={14} /> Not vaccinated
+                      </Flex>
+                    )}
+                  </Text>
+                </Group>
+
+                {student.vaccinated && student.vaccination_details && (
+                  <Box bg="gray.0" p="sm" style={{ borderRadius: '6px' }}>
+                    <Text size="sm" fw={500}>Current Vaccination:</Text>
+                    <Text size="sm">{student.vaccination_details.vaccine_name}</Text>
+                    <Text size="sm" c="dimmed">
+                      {new Date(student.vaccination_details.drive_date).toLocaleDateString()}
+                    </Text>
+                  </Box>
+                )}
+
+                {getAvailableDrives(student).length > 0 && (
+                  <>
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <Button 
+                          variant="light" 
+                          color="#663399" 
+                          leftSection={<IconVaccine size={14} />}
+                          fullWidth
+                        >
+                          Vaccinate Student
+                        </Button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {getAvailableDrives(student).map((drive) => (
+                          <Menu.Item 
+                            key={drive.id}
+                            onClick={() => handleVaccinate(student.id, drive.id)}
+                            leftSection={<IconVaccine size={14} />}
+                          >
+                            {drive.vaccine_name}
+                          </Menu.Item>
+                        ))}
+                      </Menu.Dropdown>
+                    </Menu>
+                  </>
+                )}
+              </Stack>
             </Card>
           ))}
         </SimpleGrid>
@@ -315,4 +325,3 @@ export default function Students() {
     </Container>
   );
 }
-
