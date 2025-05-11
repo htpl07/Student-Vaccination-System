@@ -64,6 +64,11 @@ const downloadWindow = window.open(
 If you deploy the backend elsewhere, update this URL in the frontend code accordingly.
 The backend venv is not connected to the frontend. The frontend has its own node_modules inside the frontend/ folder. You do not need to activate the backend venv to run the frontend.
 
+-- Update the axios to the URL you use in the backend :
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+});
+
 #### Technologies Used:
 Backend: Python, FastAPI, Uvicorn
 Frontend: React, Mantine UI
