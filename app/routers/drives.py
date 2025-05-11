@@ -17,7 +17,7 @@ def get_db():
     finally:
         db.close()
 
-# 🚀 Create Vaccination Drive
+# Create Vaccination Drive
 @router.post("/", response_model=schemas.Drive)
 def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     today = date.today()
@@ -52,12 +52,12 @@ def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.errors())
 
-# 🗓️ Get All Drives
+# Get All Drives
 @router.get("/", response_model=List[schemas.Drive])
 def get_all_drives(db: Session = Depends(get_db)):
     return db.query(models.Drive).all()
 
-# 🗓️ Get Only Upcoming Drives
+# Get Only Upcoming Drives
 @router.get("/upcoming", response_model=List[schemas.Drive])
 def get_upcoming_drives(db: Session = Depends(get_db)):
     today = date.today()

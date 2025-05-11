@@ -9,11 +9,6 @@ class StudentBase(BaseModel):
 class StudentCreate(StudentBase):
     pass
 
-# class Student(StudentBase):
-#     id: int
-#     vaccinated: bool
-#     class Config:
-#         orm_mode = True
 class VaccinationDetail(BaseModel):
     vaccine_name: str
     drive_date: date

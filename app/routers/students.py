@@ -74,14 +74,9 @@ def read_students(
     
     return response
 
-# @router.get("/", response_model=List[schemas.Student])
-# def read_students(db: Session = Depends(get_db)):
-#     return crud.get_students(db)
-
 from fastapi import HTTPException
 from .. import models
 
-# 🧬 Mark Student as Vaccinated in a Specific Drive
 @router.post("/{student_id}/vaccinate/{drive_id}")
 def vaccinate_student(
     student_id: int,

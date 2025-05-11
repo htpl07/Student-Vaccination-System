@@ -18,7 +18,7 @@ def get_db():
     finally:
         db.close()
 
-# 🧾 Get Report (with optional filter + pagination)
+# Get Report (with optional filter)
 @router.get("/")
 def get_report(
     vaccine_name: Optional[str] = Query(None),
